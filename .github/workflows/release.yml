@@ -38,26 +38,47 @@ jobs:
       - name: install meson and ninja
         run: pip install meson ninja
 
-      - name: cache vcpkg
+      - name: setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: "latest"
+      - name: cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: $env:VCPKG_ROOT/installed
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('**/meson.build') }}
+          path: |
+            ${{ runner.temp }}/vcpkg_cache
+            AppData/Local/vcpkg/archives
+          key: ${{ runner.os }}-vcpkg-binaries-${{ hashFiles('**/meson.build') }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-
+            ${{ runner.os }}-vcpkg-binaries-
 
       - name: install deps via vcpkg
         run: |
           vcpkg install curl openssl --triplet=x64-windows
-        env:
-          VCPKG_DEFAULT_TRIPLET: x64-windows
+        shell: pwsh
+
+      - name: build
+        run: |
+          meson setup build `
+            --buildtype=release `
+            --backend=ninja `
+            -Dpkg_config_path="" `
+            --cmake-prefix-path="$env:VCPKG_INSTALLATION_ROOT/installed/x64-windows"
+          ninja -C build
+        shell: pwsh
+
+      - name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: please-speed-windows
+          path: build/please-speed.exe
 
       - name: build
         run: |
           meson setup build --buildtype=release --backend=ninja -Dpkg_config_path="" --cmake-prefix-path="$env:VCPKG_ROOT/installed/x64-windows"
           ninja -C build
         shell: pwsh
-        
+
       - name: upload
         uses: actions/upload-artifact@v4
         with:
