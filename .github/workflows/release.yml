@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   build-linux:
@@ -60,8 +60,8 @@ jobs:
           name: please-speed-windows
           path: build/please-speed.exe
 
-  build-macos:
-    runs-on: macos-latest
+  build-macos-arm:
+    runs-on: macos-latest # M1/M2/M3 (arm64)
     steps:
       - uses: actions/checkout@v7
         with:
@@ -78,5 +78,51 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v4
         with:
-          name: please-speed-macos
+          name: please-speed-macos-arm64
           path: build/please-speed
+
+  build-macos-intel:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: install deps
+        run: brew install curl openssl libzip ninja meson
+
+      - name: build
+        run: |
+          meson setup build --buildtype=release
+          ninja -C build
+
+      - name: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: please-speed-macos-x86_64
+          path: build/please-speed
+
+  release:
+      needs: [build-linux, build-windows, build-macos-arm, build-macos-intel]
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+      steps:
+        - name: download artifacts
+          uses: actions/download-artifact@v4
+
+        - name: rename binaries
+          run: |
+            mv please-speed-linux/please-speed        please-speed-linux/please-speed-linux
+            mv please-speed-macos-arm64/please-speed  please-speed-macos-arm64/please-speed-macos-arm64
+            mv please-speed-macos-x86_64/please-speed please-speed-macos-x86_64/please-speed-macos-intel
+
+        - name: create release
+          uses: softprops/action-gh-release@v2
+          with:
+            files: |
+              please-speed-linux/please-speed-linux
+              please-speed-windows/please-speed.exe
+              please-speed-macos-arm64/please-speed-macos-arm64
+              please-speed-macos-x86_64/please-speed-macos-intel
+            generate_release_notes: true
