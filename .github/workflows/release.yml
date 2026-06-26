@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     container: alpine:latest
     steps:
+      - name: install git
+        run: apk add --no-cache git
+      
       - uses: actions/checkout@v7
         with:
           submodules: recursive
@@ -106,7 +109,7 @@ jobs:
           $(brew --prefix libzip)/lib/pkgconfig"
           meson setup build --buildtype=release --prefer-static
           ninja -C build
-          
+
       - name: check static
         run: otool -L build/please-speed || true
 

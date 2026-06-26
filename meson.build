@@ -34,6 +34,8 @@ executable('please-speed',
     'src/packer.cpp',
   ],
   include_directories : ['src'],
+  # windows
+  cpp_args : ['-DNOMINMAX'],
   dependencies : [
     wren_dep,
     openssl,

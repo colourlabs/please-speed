@@ -6,7 +6,6 @@
 
 #include <algorithm>
 #include <filesystem>
-#include <iostream>
 
 #include "log.hpp"
 #include <stdexcept>
